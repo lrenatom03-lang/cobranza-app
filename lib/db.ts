@@ -77,8 +77,18 @@ export async function saveDB(db: DB): Promise<void> {
   await fs.writeFile(DB_FILE, JSON.stringify(db), 'utf-8');
 }
 
-export async function resetDB(): Promise<DB> {
-  const db = seedDemo();
+export async function resetDB(mode: 'demo' | 'empty' = 'demo', keepSettings?: DB['settings']): Promise<DB> {
+  const db: DB =
+    mode === 'empty'
+      ? {
+          clients: [],
+          invoices: [],
+          actions: [],
+          promises: [],
+          settings: keepSettings ?? DEFAULT_SETTINGS,
+          meta: { seededAt: new Date().toISOString().slice(0, 10), nextId: 10000 },
+        }
+      : seedDemo();
   await saveDB(db);
   return db;
 }

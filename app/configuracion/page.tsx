@@ -101,18 +101,32 @@ export default function ConfiguracionPage() {
       </div>
 
       <div className="panel" style={{ marginTop: 20 }}>
-        <h2>Datos de demostración</h2>
-        <p style={{ fontSize: 13, color: 'var(--muted)' }}>Regenera la cartera de ejemplo (borra clientes, facturas, gestiones y promesas actuales).</p>
-        <button
-          className="btn danger-ghost"
-          onClick={async () => {
-            if (!window.confirm('¿Regenerar los datos de demostración? Se perderán los datos actuales.')) return;
-            await fetch('/api/seed', { method: 'POST' });
-            await reload();
-          }}
-        >
-          Regenerar datos demo
-        </button>
+        <h2>Datos</h2>
+        <p style={{ fontSize: 13, color: 'var(--muted)' }}>
+          Usa <strong>Empezar de cero</strong> antes de importar tus datos reales (borra clientes, facturas, gestiones y promesas; conserva tu configuración). Usa <strong>Regenerar datos demo</strong> para volver a la cartera de ejemplo.
+        </p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            className="btn danger-ghost"
+            onClick={async () => {
+              if (!window.confirm('¿Vaciar toda la cartera? Se borrarán clientes, facturas, gestiones y promesas. Tu configuración se conserva.')) return;
+              await fetch('/api/seed', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: 'empty' }) });
+              await reload();
+            }}
+          >
+            Empezar de cero (vaciar cartera)
+          </button>
+          <button
+            className="btn secondary"
+            onClick={async () => {
+              if (!window.confirm('¿Regenerar los datos de demostración? Se perderán los datos actuales.')) return;
+              await fetch('/api/seed', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: 'demo' }) });
+              await reload();
+            }}
+          >
+            Regenerar datos demo
+          </button>
+        </div>
       </div>
     </>
   );
