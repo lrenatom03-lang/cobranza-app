@@ -26,6 +26,11 @@ npm run dev        # http://localhost:3000
 
 La primera ejecución genera datos de demostración (120 clientes, ~630 facturas) para validar el flujo completo. Desde **Configuración** puedes regenerarlos, y desde **Importar** cargar tus facturas reales (exporta tu Excel a CSV).
 
+### Persistencia
+
+- **Local** (sin configuración): archivo `data/db.json`.
+- **Nube** (Vercel + Neon/Supabase): define la variable de entorno `DATABASE_URL` con la cadena de conexión Postgres; la app crea su tabla (`app_state`) y siembra datos demo automáticamente al primer arranque.
+
 ## Arquitectura
 
 - Next.js 14 (App Router) + TypeScript, CSS propio (sin dependencias extra).

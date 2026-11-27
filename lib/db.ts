@@ -8,8 +8,45 @@ const DB_FILE = path.join(DATA_DIR, 'db.json');
 
 let cache: DB | null = null;
 
+const REMOTE_DB = !!process.env.DATABASE_URL;
+
+let pool: import('pg').Pool | null = null;
+
+async function getPool() {
+  if (!pool) {
+    const { Pool } = await import('pg');
+    const host = new URL(process.env.DATABASE_URL ?? '').hostname;
+    const isLocal = host === 'localhost' || host === '127.0.0.1';
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: isLocal ? false : { rejectUnauthorized: false },
+      max: 3,
+    });
+    await pool.query(
+      'CREATE TABLE IF NOT EXISTS app_state (id INT PRIMARY KEY, data JSONB NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT now())'
+    );
+  }
+  return pool;
+}
+
 export async function getDB(): Promise<DB> {
   if (cache) return cache;
+
+  if (REMOTE_DB) {
+    const client = await getPool();
+    const res = await client.query<{ data: DB }>('SELECT data FROM app_state WHERE id = 1');
+    if (res.rows.length) {
+      const db = res.rows[0].data;
+      if (!db.settings?.weights) db.settings = DEFAULT_SETTINGS;
+      cache = db;
+      return db;
+    }
+    const db = seedDemo();
+    await client.query('INSERT INTO app_state (id, data) VALUES (1, $1) ON CONFLICT (id) DO NOTHING', [JSON.stringify(db)]);
+    cache = db;
+    return db;
+  }
+
   try {
     const raw = await fs.readFile(DB_FILE, 'utf-8');
     const db = JSON.parse(raw) as DB;
@@ -25,6 +62,14 @@ export async function getDB(): Promise<DB> {
 
 export async function saveDB(db: DB): Promise<void> {
   cache = db;
+  if (REMOTE_DB) {
+    const client = await getPool();
+    await client.query(
+      'INSERT INTO app_state (id, data, updated_at) VALUES (1, $1, now()) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = now()',
+      [JSON.stringify(db)]
+    );
+    return;
+  }
   await fs.mkdir(DATA_DIR, { recursive: true });
   await fs.writeFile(DB_FILE, JSON.stringify(db), 'utf-8');
 }
