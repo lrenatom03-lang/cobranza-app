@@ -31,8 +31,9 @@ export function usePayload() {
     const j = await r.json();
     if (!r.ok) throw new Error(j?.error ?? `HTTP ${r.status}`);
     if (j?.derived) setData(j as Payload);
+    else void load();
     return j;
-  }, []);
+  }, [load]);
 
   return { data, error, reload: load, mutate };
 }
