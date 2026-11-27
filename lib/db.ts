@@ -10,6 +10,10 @@ let cache: DB | null = null;
 
 const REMOTE_DB = !!process.env.DATABASE_URL;
 
+export function storageMode(): 'postgres' | 'file' {
+  return REMOTE_DB ? 'postgres' : 'file';
+}
+
 let pool: import('pg').Pool | null = null;
 
 async function getPool() {
@@ -30,8 +34,6 @@ async function getPool() {
 }
 
 export async function getDB(): Promise<DB> {
-  if (cache) return cache;
-
   if (REMOTE_DB) {
     const client = await getPool();
     const res = await client.query<{ data: DB }>('SELECT data FROM app_state WHERE id = 1');
@@ -47,6 +49,7 @@ export async function getDB(): Promise<DB> {
     return db;
   }
 
+  if (cache) return cache;
   try {
     const raw = await fs.readFile(DB_FILE, 'utf-8');
     const db = JSON.parse(raw) as DB;
